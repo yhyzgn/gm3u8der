@@ -13,7 +13,6 @@ import (
 	"gm3u8der/holder"
 	"gm3u8der/thm"
 	"gm3u8der/ui"
-	"time"
 )
 
 const (
@@ -22,9 +21,6 @@ const (
 
 func main() {
 	db.Init()
-
-	time.Sleep(3 * time.Second)
-
 	holder.Init()
 
 	der := app.New()

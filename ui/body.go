@@ -15,12 +15,14 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ncruces/zenity"
+	m3u8Model "github.com/yhyzgn/m3u8/model"
+	"gm3u8der/dl"
 	"gm3u8der/holder"
 	"gm3u8der/model"
 	"gm3u8der/util"
 	"log"
 	"strconv"
-	"strings"
+	"time"
 )
 
 const (
@@ -86,16 +88,23 @@ func Body(win fyne.Window) {
 
 					valExt := fiExt.Widget.(*widget.RadioGroup).Selected
 
-					bdDownLoadingList = append([]*model.MediaItem{{
+					item := &model.MediaItem{
 						URL:      valM3u8URL,
 						Name:     valMediaName,
 						ExtType:  model.ParseExtType(valExt),
-						SHA1:     util.SHA1(valM3u8URL),
 						Status:   model.Downloading,
-						Progress: 0.64,
-					}}, bdDownLoadingList...)
+						Progress: 0.0,
+					}
 
-					listDownloading.Refresh()
+					// 试试看
+					var fuck func(playList []m3u8Model.PlayItem, d *dl.Downloader)
+					fuck = func(playList []m3u8Model.PlayItem, d *dl.Downloader) {
+						item.URL = playList[0].URL
+						item.Download(holder.Settings.SaveDir, fuck)
+					}
+					item.Download(holder.Settings.SaveDir, fuck)
+
+					bdDownLoadingList = append([]*model.MediaItem{item}, bdDownLoadingList...)
 				} else {
 					// 取消
 				}
@@ -177,7 +186,7 @@ func Body(win fyne.Window) {
 			name = append(name[:40], []rune("...")...)
 			name = append(name, end...)
 		}
-		info.Objects[0].(*widget.Label).SetText(string(name) + "." + strings.ToLower(model.MapExtType(item.ExtType)))
+		info.Objects[0].(*widget.Label).SetText(string(name) + item.ExtName())
 		info.Objects[2].(*widget.Label).SetText(item.Speed)
 
 		progress.SetValue(item.Progress)
@@ -189,5 +198,15 @@ func Body(win fyne.Window) {
 		banner,
 		listDownloading,
 	)
+
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			if nil != listDownloading {
+				listDownloading.Refresh()
+			}
+		}
+	}()
+
 	win.SetContent(content)
 }
