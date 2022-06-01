@@ -19,4 +19,5 @@
 .idea/
 
 *.tmp
-settings.json
+
+go_build_*

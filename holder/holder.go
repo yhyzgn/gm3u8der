@@ -6,7 +6,9 @@
 
 package holder
 
-import "gm3u8der/model"
+import (
+	"gm3u8der/model"
+)
 
 var (
 	Settings *model.Settings

@@ -7,41 +7,35 @@
 package model
 
 import (
-	"encoding/json"
+	"gm3u8der/db"
 	"gm3u8der/util"
-	"io/ioutil"
-	"os"
-)
-
-const (
-	filename = "./settings.json"
 )
 
 type Settings struct {
-	SaveDir   string  `json:"saveDir"`
-	ExtType   ExtType `json:"extType"`
-	TaskCount int     `json:"taskCount"`
+	ID        int     `json:"id" gorm:"column:id;primaryKey;autoIncrement;type:int(11);"`
+	SaveDir   string  `json:"saveDir" gorm:"column:save_dir;type:varchar(255);"`
+	ExtType   ExtType `json:"extType" gorm:"column:ext_type;type:int(11);"`
+	TaskCount int     `json:"taskCount" gorm:"column:task_count;type:int(11);"`
 }
 
 func NewSettings() *Settings {
+	_ = db.Instance.AutoMigrate(&Settings{})
 	return new(Settings)
 }
 
 func (s *Settings) Load() *Settings {
-	bys, err := ioutil.ReadFile(filename)
-	if nil != err || nil == bys {
-		s.storeDefault()
-	}
-
 	var temp Settings
-	err = json.Unmarshal(bys, &temp)
+	err := db.Instance.First(&temp).Error
 	if nil != err {
 		s.storeDefault()
-	} else {
-		s.SaveDir = temp.SaveDir
-		s.ExtType = temp.ExtType
-		s.TaskCount = temp.TaskCount
+		return s
 	}
+
+	s.ID = temp.ID
+	s.SaveDir = temp.SaveDir
+	s.ExtType = temp.ExtType
+	s.TaskCount = temp.TaskCount
+
 	return s
 }
 
@@ -50,6 +44,7 @@ func (s *Settings) Store() {
 }
 
 func (s *Settings) storeDefault() {
+	s.ID = 1
 	s.SaveDir = util.SystemDownloadDir()
 	s.ExtType = MP4
 	s.TaskCount = 5
@@ -58,12 +53,8 @@ func (s *Settings) storeDefault() {
 }
 
 func (s *Settings) store() {
-	bys, err := json.MarshalIndent(s, "", "\t")
+	err := db.Instance.Save(s).Error
 	if nil != err {
-		panic(err)
-	}
-
-	if err = ioutil.WriteFile(filename, bys, os.ModePerm); nil != err {
 		panic(err)
 	}
 }
