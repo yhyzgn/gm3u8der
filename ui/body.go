@@ -46,7 +46,7 @@ func init() {
 
 func Body(win fyne.Window) {
 	// 监视剪贴板
-	watchClipboard(win, func(m3u8URL string) {
+	Clipboard(win, func(m3u8URL string) {
 		showURLDialog(win, m3u8URL)
 	})
 
