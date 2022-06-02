@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 echo package...
-fyne package -icon "assets/img/icon.png"
+fyne package -icon "assets/img/logo.png"
 echo packaged, closing...
 sleep 2s
