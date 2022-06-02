@@ -35,6 +35,9 @@ const (
 
 var (
 	divLine = canvas.NewLine(theme.ShadowColor())
+
+	listDownloading   *widget.List
+	bdDownLoadingList = make([]*model.MediaItem, 0)
 )
 
 func init() {
@@ -42,104 +45,15 @@ func init() {
 }
 
 func Body(win fyne.Window) {
-	var listDownloading *widget.List
-	bdDownLoadingList := make([]*model.MediaItem, 0)
+	// 监视剪贴板
+	watchClipboard(win, func(m3u8URL string) {
+		showURLDialog(win, m3u8URL)
+	})
 
+	// 创建工具栏
 	toolBar := widget.NewToolbar(
 		widget.NewToolbarAction(util.LoadResourceFromFile(icAdd), func() {
-			rg := widget.NewRadioGroup([]string{"MP4", "MKV", "AVI", "TS"}, func(s string) {})
-			rg.SetSelected(model.MapExtType(holder.Settings.ExtType))
-			rg.Horizontal = true
-
-			fiM3u8URL := &widget.FormItem{
-				Text:   "M3U8链接",
-				Widget: widget.NewEntry(),
-			}
-
-			fiMediaName := &widget.FormItem{
-				Text:   "媒体名称",
-				Widget: widget.NewEntry(),
-			}
-			fiExt := &widget.FormItem{
-				Text:   "输出格式",
-				Widget: rg,
-			}
-			items := []*widget.FormItem{fiM3u8URL, fiMediaName, fiExt}
-			var dlg dialog.Dialog
-			dlg = dialog.NewForm("新建下载任务", "下载", "取消", items, func(b bool) {
-				if b {
-					// 确定
-					valM3u8URL := fiM3u8URL.Widget.(*widget.Entry).Text
-					if valM3u8URL == "" {
-						wgt.ShowErrorDialog("m3u8地址错误", "是否重新输入？", win, func() {
-							dlg.Show()
-						})
-						return
-					}
-					valMediaName := fiMediaName.Widget.(*widget.Entry).Text
-					if valMediaName == "" {
-						wgt.ShowErrorDialog("媒体文件名称为空", "是否返回输入？", win, func() {
-							dlg.Show()
-						})
-						return
-					}
-
-					valExt := fiExt.Widget.(*widget.RadioGroup).Selected
-
-					item := &model.MediaItem{
-						URL:     valM3u8URL,
-						Name:    valMediaName,
-						ExtType: model.ParseExtType(valExt),
-						Status:  model.Downloading,
-					}
-
-					// 试试看
-					var selector func(playList []m3u8Model.PlayItem, d *dl.Downloader)
-					selector = func(playList []m3u8Model.PlayItem, d *dl.Downloader) {
-						// 选择分辨率方案
-						rgItems := make([]string, len(playList))
-						itemIndexMap := make(map[string]int)
-
-						var label string
-						for i, pl := range playList {
-							if "" != pl.Resolution {
-								label = "分辨率"
-								rgItems[i] = pl.Resolution
-							} else {
-								label = "带宽"
-								rgItems[i] = pl.BandWidth
-							}
-							itemIndexMap[rgItems[i]] = i
-						}
-						rgResolution := widget.NewRadioGroup(rgItems, func(s string) {})
-						rgResolution.SetSelected(rgItems[len(rgItems)-1]) // 默认选中最后一个
-
-						fiResolution := &widget.FormItem{
-							Text:   label,
-							Widget: rgResolution,
-						}
-
-						dialog.ShowForm("选择视频分辨率", "确定", "取消", []*widget.FormItem{fiResolution}, func(bOk bool) {
-							if bOk {
-								// 确定
-								piSelected := playList[itemIndexMap[rgResolution.Selected]]
-								item.URL = piSelected.URL
-								item.Download(holder.Settings.SaveDir, selector)
-							}
-							// 取消就不管啦
-						}, win)
-					}
-					item.Download(holder.Settings.SaveDir, selector)
-
-					bdDownLoadingList = append([]*model.MediaItem{item}, bdDownLoadingList...)
-				} else {
-					// 取消
-				}
-			}, win)
-			dlg.Resize(fyne.Size{
-				Width: 700,
-			})
-			dlg.Show()
+			showURLDialog(win, "")
 		}),
 		widget.NewToolbarAction(util.LoadResourceFromFile(icDelete), func() {}),
 		widget.NewToolbarSpacer(),
@@ -238,4 +152,108 @@ func Body(win fyne.Window) {
 	})
 
 	win.SetContent(content)
+}
+
+func showURLDialog(win fyne.Window, providedURL string) {
+	rg := widget.NewRadioGroup([]string{"MP4", "MKV", "AVI", "TS"}, func(s string) {})
+	rg.SetSelected(model.MapExtType(holder.Settings.ExtType))
+	rg.Horizontal = true
+
+	// URL
+	wdURL := widget.NewEntry()
+	wdURL.SetText(providedURL)
+
+	// 媒体名称
+	wdName := widget.NewEntry()
+	wdName.SetText(util.SHA1(providedURL))
+
+	fiM3u8URL := &widget.FormItem{
+		Text:   "M3U8链接",
+		Widget: wdURL,
+	}
+
+	fiMediaName := &widget.FormItem{
+		Text:   "媒体名称",
+		Widget: wdName,
+	}
+	fiExt := &widget.FormItem{
+		Text:   "输出格式",
+		Widget: rg,
+	}
+	items := []*widget.FormItem{fiM3u8URL, fiMediaName, fiExt}
+	var dlg dialog.Dialog
+	dlg = dialog.NewForm("新建下载任务", "下载", "取消", items, func(b bool) {
+		if b {
+			// 确定
+			valM3u8URL := fiM3u8URL.Widget.(*widget.Entry).Text
+			if valM3u8URL == "" {
+				wgt.ShowErrorDialog("m3u8地址错误", "是否重新输入？", win, func() {
+					dlg.Show()
+				})
+				return
+			}
+			valMediaName := fiMediaName.Widget.(*widget.Entry).Text
+			if valMediaName == "" {
+				wgt.ShowErrorDialog("媒体文件名称为空", "是否返回输入？", win, func() {
+					dlg.Show()
+				})
+				return
+			}
+
+			valExt := fiExt.Widget.(*widget.RadioGroup).Selected
+
+			item := &model.MediaItem{
+				URL:     valM3u8URL,
+				Name:    valMediaName,
+				ExtType: model.ParseExtType(valExt),
+				Status:  model.Downloading,
+			}
+
+			// 试试看
+			var selector func(playList []m3u8Model.PlayItem, d *dl.Downloader)
+			selector = func(playList []m3u8Model.PlayItem, d *dl.Downloader) {
+				// 选择分辨率方案
+				rgItems := make([]string, len(playList))
+				itemIndexMap := make(map[string]int)
+
+				var label string
+				for i, pl := range playList {
+					if "" != pl.Resolution {
+						label = "分辨率"
+						rgItems[i] = pl.Resolution
+					} else {
+						label = "带宽"
+						rgItems[i] = pl.BandWidth
+					}
+					itemIndexMap[rgItems[i]] = i
+				}
+				rgResolution := widget.NewRadioGroup(rgItems, func(s string) {})
+				rgResolution.SetSelected(rgItems[len(rgItems)-1]) // 默认选中最后一个
+
+				fiResolution := &widget.FormItem{
+					Text:   label,
+					Widget: rgResolution,
+				}
+
+				dialog.ShowForm("选择视频分辨率", "确定", "取消", []*widget.FormItem{fiResolution}, func(bOk bool) {
+					if bOk {
+						// 确定
+						piSelected := playList[itemIndexMap[rgResolution.Selected]]
+						item.URL = piSelected.URL
+						item.Download(holder.Settings.SaveDir, selector)
+					}
+					// 取消就不管啦
+				}, win)
+			}
+			item.Download(holder.Settings.SaveDir, selector)
+
+			bdDownLoadingList = append([]*model.MediaItem{item}, bdDownLoadingList...)
+		} else {
+			// 取消
+		}
+	}, win)
+	dlg.Resize(fyne.Size{
+		Width: 700,
+	})
+	dlg.Show()
 }
