@@ -46,9 +46,10 @@ func init() {
 
 func Body(win fyne.Window) {
 	// 监视剪贴板
-	Clipboard(win, func(m3u8URL string) {
-		showURLDialog(win, m3u8URL)
-	})
+	// 剪贴板内容不是字符串，会导致奔溃，所以先禁用吧，后续再寻找可行性方案
+	//Clipboard(win, func(m3u8URL string) {
+	//	showURLDialog(win, m3u8URL)
+	//})
 
 	// 创建工具栏
 	toolBar := widget.NewToolbar(
