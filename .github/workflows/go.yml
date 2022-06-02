@@ -60,7 +60,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir gm3u8der-linux-amd64
-          cp gm3u8der.tar.gz gm3u8der-linux-amd64/gm3u8der.tar.gz
+          cp gm3u8der.tar.xz gm3u8der-linux-amd64/gm3u8der.tar.xz
           tar -czvf gm3u8der-linux-amd64-${{ env.version }}.tar.gz gm3u8der-linux-amd64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
