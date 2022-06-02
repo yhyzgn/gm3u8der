@@ -1,0 +1,103 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+
+    steps:
+      - name: Built env
+        id: date
+        run: |
+          echo "version=v$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
+          echo "builtDate=$(TZ=UTC-8 date '+%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Test env
+        run: echo ${{ env.version }}
+
+      - name: Set up Go 1.18
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+        run: go version
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Build linux
+        if: matrix.os == 'ubuntu-latest'
+        run: fyne package -os linux -icon "assets/img/icon.png" -appVersion "${{ env.builtDate }}" -appBuild "${{ env.version }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build mac
+        if: matrix.os == 'macos-latest'
+        run: fyne package -os darwin -icon "assets/img/icon.png" -appVersion "${{ env.builtDate }}" -appBuild "${{ env.version }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build windows
+        if: matrix.os == 'windows-latest'
+        run: fyne package -os windows -icon "assets/img/icon.png" -appVersion "${{ env.builtDate }}" -appBuild "${{ env.version }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gzip linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir gm3u8der-linux-amd64/assets
+          cp gm3u8der gm3u8der-linux-amd64/gm3u8der
+          cp -r assets gm3u8der-linux-amd64/assets
+          tar -czvf gm3u8der-linux-amd64-${{ env.version }}.tar.gz gm3u8der-linux-amd64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gzip mac
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir gm3u8der-mac-amd64/assets
+          cp gm3u8der.app gm3u8der-mac-amd64/gm3u8der.app
+          cp -r assets gm3u8der-mac-amd64/assets
+          tar -czvf gm3u8der-mac-amd64-${{ env.version }}.tar.gz gm3u8der-mac-amd64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gzip windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir gm3u8der-windows-amd64
+          cp gm3u8der.exe gm3u8der-windows-amd64/gm3u8der.exe
+          cp -r assets gm3u8der-windows-amd64/assets
+          tar -czvf gm3u8der-windows-amd64-${{ env.version }}.tar.gz gm3u8der-windows-amd64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            gm3u8der-linux-amd64-${{ env.version }}.tar.gz
+            gm3u8der-mac-amd64-${{ env.version }}.tar.gz
+            gm3u8der-windows-amd64-${{ env.version }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
