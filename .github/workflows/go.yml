@@ -1,14 +1,9 @@
 name: Release
 
 on:
-  push:
-    branches: [ main ]
+  create:
     tags:
-      - 'v*'
-  pull_request:
-    branches: [ main ]
-    tags:
-      - 'v*'
+      - v*
 
 jobs:
   build:
