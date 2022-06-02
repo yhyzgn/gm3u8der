@@ -9,7 +9,6 @@ package holder
 import (
 	_ "gm3u8der/env"
 	"gm3u8der/model"
-	"time"
 )
 
 var (
@@ -17,7 +16,5 @@ var (
 )
 
 func Init() {
-	// 等待数据库连接
-	time.Sleep(1 * time.Second)
 	Settings = model.NewSettings().Load()
 }

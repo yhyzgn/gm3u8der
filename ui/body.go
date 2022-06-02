@@ -16,10 +16,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ncruces/zenity"
 	m3u8Model "github.com/yhyzgn/m3u8/model"
+	"gm3u8der/component"
 	"gm3u8der/dl"
 	"gm3u8der/holder"
 	"gm3u8der/model"
 	"gm3u8der/util"
+	"gm3u8der/wgt"
 	"log"
 	"strconv"
 	"time"
@@ -69,40 +71,65 @@ func Body(win fyne.Window) {
 					// 确定
 					valM3u8URL := fiM3u8URL.Widget.(*widget.Entry).Text
 					if valM3u8URL == "" {
-						dialog.NewConfirm("m3u8地址错误", "是否重新输入？", func(ok bool) {
-							if ok {
-								dlg.Show()
-							}
-						}, win).Show()
+						wgt.ShowErrorDialog("m3u8地址错误", "是否重新输入？", win, func() {
+							dlg.Show()
+						})
 						return
 					}
 					valMediaName := fiMediaName.Widget.(*widget.Entry).Text
 					if valMediaName == "" {
-						dialog.NewConfirm("媒体文件名称为空", "是否返回输入？", func(ok bool) {
-							if ok {
-								dlg.Show()
-							}
-						}, win).Show()
+						wgt.ShowErrorDialog("媒体文件名称为空", "是否返回输入？", win, func() {
+							dlg.Show()
+						})
 						return
 					}
 
 					valExt := fiExt.Widget.(*widget.RadioGroup).Selected
 
 					item := &model.MediaItem{
-						URL:      valM3u8URL,
-						Name:     valMediaName,
-						ExtType:  model.ParseExtType(valExt),
-						Status:   model.Downloading,
-						Progress: 0.0,
+						URL:     valM3u8URL,
+						Name:    valMediaName,
+						ExtType: model.ParseExtType(valExt),
+						Status:  model.Downloading,
 					}
 
 					// 试试看
-					var fuck func(playList []m3u8Model.PlayItem, d *dl.Downloader)
-					fuck = func(playList []m3u8Model.PlayItem, d *dl.Downloader) {
-						item.URL = playList[0].URL
-						item.Download(holder.Settings.SaveDir, fuck)
+					var selector func(playList []m3u8Model.PlayItem, d *dl.Downloader)
+					selector = func(playList []m3u8Model.PlayItem, d *dl.Downloader) {
+						// 选择分辨率方案
+						rgItems := make([]string, len(playList))
+						itemIndexMap := make(map[string]int)
+
+						var label string
+						for i, pl := range playList {
+							if "" != pl.Resolution {
+								label = "分辨率"
+								rgItems[i] = pl.Resolution
+							} else {
+								label = "带宽"
+								rgItems[i] = pl.BandWidth
+							}
+							itemIndexMap[rgItems[i]] = i
+						}
+						rgResolution := widget.NewRadioGroup(rgItems, func(s string) {})
+						rgResolution.SetSelected(rgItems[len(rgItems)-1]) // 默认选中最后一个
+
+						fiResolution := &widget.FormItem{
+							Text:   label,
+							Widget: rgResolution,
+						}
+
+						dialog.ShowForm("选择视频分辨率", "确定", "取消", []*widget.FormItem{fiResolution}, func(bOk bool) {
+							if bOk {
+								// 确定
+								piSelected := playList[itemIndexMap[rgResolution.Selected]]
+								item.URL = piSelected.URL
+								item.Download(holder.Settings.SaveDir, selector)
+							}
+							// 取消就不管啦
+						}, win)
 					}
-					item.Download(holder.Settings.SaveDir, fuck)
+					item.Download(holder.Settings.SaveDir, selector)
 
 					bdDownLoadingList = append([]*model.MediaItem{item}, bdDownLoadingList...)
 				} else {
@@ -139,13 +166,17 @@ func Body(win fyne.Window) {
 			taskCount := widget.NewFormItem("同时下载任务数", wdTaskCount)
 
 			items := []*widget.FormItem{itemSelectDir, fiExt, taskCount}
-			dlg := dialog.NewForm("设置", "保存", "取消", items, func(b bool) {
+			var dlg dialog.Dialog
+			dlg = dialog.NewForm("设置", "保存", "取消", items, func(b bool) {
 				if b {
 					// 保存
 					taskCount, err := strconv.Atoi(wdTaskCount.Text)
 					if nil != err {
-						log.Println("任务数必须是数字")
-						taskCount = holder.Settings.TaskCount
+						wgt.ShowErrorDialog("任务数必须是数字", "是否返回输入？", win, func() {
+							taskCount = holder.Settings.TaskCount
+							dlg.Show()
+						})
+						return
 					}
 					holder.Settings.SaveDir = wdSaveDir.Text
 					holder.Settings.ExtType = model.ParseExtType(rg.Selected)
@@ -187,9 +218,9 @@ func Body(win fyne.Window) {
 			name = append(name, end...)
 		}
 		info.Objects[0].(*widget.Label).SetText(string(name) + item.ExtName())
-		info.Objects[2].(*widget.Label).SetText(item.Speed)
+		info.Objects[2].(*widget.Label).SetText(item.Speed(time.Second))
 
-		progress.SetValue(item.Progress)
+		progress.SetValue(item.Progress())
 	})
 
 	banner := container.NewVBox(toolBar, divLine)
@@ -199,14 +230,12 @@ func Body(win fyne.Window) {
 		listDownloading,
 	)
 
-	go func() {
-		for {
-			time.Sleep(time.Second)
-			if nil != listDownloading {
-				listDownloading.Refresh()
-			}
+	// 定时刷新列表
+	component.StartTicker(time.Second, func() {
+		if nil != listDownloading {
+			listDownloading.Refresh()
 		}
-	}()
+	})
 
 	win.SetContent(content)
 }

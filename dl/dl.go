@@ -9,7 +9,6 @@ package dl
 import (
 	"bytes"
 	"fmt"
-	"github.com/yhyzgn/goat/file"
 	"github.com/yhyzgn/m3u8/crypt"
 	"github.com/yhyzgn/m3u8/model"
 	"github.com/yhyzgn/m3u8/net"
@@ -31,46 +30,43 @@ type Downloader struct {
 	pool            chan *Resource
 	concurrent      int
 	resources       []*Resource
-	dir             string
-	finished        chan *Resource
-	url             string
-	speed           string
-	speedTicker     *time.Ticker
+	tsDir           string
+	resourceFinish  chan *Resource
+	m3u8URL         string
 	lastSize        uint64
 	currentSize     uint64
 	totalCount      int
 	downloadedCount int
-	complete        chan bool
+	started         bool
+	allFinished     bool
+	merger          *merger
 }
 
-func New(url, dir string) *Downloader {
+func New(m3u8URL, saveDir, name, extName string) *Downloader {
+	tsDir := path.Join(saveDir, "ts_"+util.SHA1(m3u8URL))
+	mediaFile := name + extName
+	mediaPath := path.Join(saveDir, mediaFile)
+
 	concurrent := runtime.NumCPU()
 
 	return &Downloader{
-		wg:          &sync.WaitGroup{},
-		pool:        make(chan *Resource, concurrent),
-		finished:    make(chan *Resource, concurrent),
-		dir:         dir,
-		concurrent:  concurrent,
-		url:         url,
-		speedTicker: time.NewTicker(1 * time.Second),
-		complete:    make(chan bool),
+		wg:             &sync.WaitGroup{},
+		pool:           make(chan *Resource, concurrent),
+		resourceFinish: make(chan *Resource, concurrent),
+		tsDir:          tsDir,
+		concurrent:     concurrent,
+		m3u8URL:        m3u8URL,
+		merger: &merger{
+			tsDir:         tsDir,
+			mediaPath:     mediaPath,
+			mediaFilename: mediaFile,
+			convert:       ".ts" != extName,
+		},
 	}
 }
 
-func (dl *Downloader) Progress() float64 {
-	if dl.totalCount > 0 {
-		return float64(dl.downloadedCount) / float64(dl.totalCount)
-	}
-	return 0
-}
-
-func (dl *Downloader) Speed() string {
-	return dl.speed
-}
-
-func (dl *Downloader) Start(resolutionSelector func(playList []model.PlayItem, d *Downloader)) (tsNames []string, tsFile string) {
-	m3u, err := parser.FromNetwork(dl.url)
+func (dl *Downloader) Start(resolutionSelector func(playList []model.PlayItem, d *Downloader)) {
+	m3u, err := parser.FromNetwork(dl.m3u8URL)
 	if nil != err {
 		log.Println(err)
 		return
@@ -87,18 +83,8 @@ func (dl *Downloader) Start(resolutionSelector func(playList []model.PlayItem, d
 		return
 	}
 
-	go dl.calcSpeed()
-
 	// 开始下载
-	return dl.start(m3u.TsList)
-}
-
-func (dl *Downloader) Finished() chan *Resource {
-	return dl.finished
-}
-
-func (dl *Downloader) Complete() chan bool {
-	return dl.complete
+	dl.start(m3u.TsList)
 }
 
 func (dl *Downloader) append(resources ...*Resource) *Downloader {
@@ -106,15 +92,16 @@ func (dl *Downloader) append(resources ...*Resource) *Downloader {
 	return dl
 }
 
-func (dl *Downloader) start(tsList []model.TS) (tsNames []string, tsFile string) {
-	if err := os.MkdirAll(dl.dir, os.ModePerm); nil != err {
+func (dl *Downloader) start(tsList []model.TS) {
+	if err := os.MkdirAll(dl.tsDir, os.ModePerm); nil != err {
 		panic(err)
 	}
 
 	dl.totalCount = len(tsList)
+	dl.started = true
 
 	keyMap := make(map[string][]byte)
-	tsNames = make([]string, 0)
+	tsNames := make([]string, 0)
 
 	for i, item := range tsList {
 		name := fmt.Sprintf("slice_%06d.ts", i+1)
@@ -132,17 +119,25 @@ func (dl *Downloader) start(tsList []model.TS) (tsNames []string, tsFile string)
 		})
 	}
 
-	tsFile = path.Join(dl.dir, "slice.lst")
-	_ = file.WriteString(tsFile, strings.Join(tsNames, "\n"))
+	tsFile := path.Join(dl.tsDir, "slice.lst")
+	_ = util.WriteString(tsFile, strings.Join(tsNames, "\n"))
 
-	// 更新进度条
-	go func() {
+	// 更新进度
+	go func(names []string, manifestFile string) {
 		for {
-			<-dl.Finished()
+			<-dl.resourceFinish
 			dl.downloadedCount++
-			dl.complete <- dl.downloadedCount == dl.totalCount
+			if dl.downloadedCount == dl.totalCount {
+				dl.allFinished = true
+
+				dl.merger.names = names
+				dl.merger.manifest = manifestFile
+
+				// 开始合并视频片段
+				dl.merger.apply()
+			}
 		}
-	}()
+	}(tsNames, tsFile)
 
 	go dl.runWithReader(func(resourceIndex int, reader io.ReadCloser) io.Reader {
 		key := tsList[resourceIndex].Key
@@ -153,7 +148,6 @@ func (dl *Downloader) start(tsList []model.TS) (tsNames []string, tsFile string)
 		data, _ = crypt.AES128Decrypt(data, keyMap[string(key.Method)+"-"+key.URI], []byte(key.IV))
 		return bytes.NewReader(data)
 	})
-	return
 }
 
 func (dl *Downloader) runWithReader(reader func(resourceIndex int, reader io.ReadCloser) io.Reader) {
@@ -163,9 +157,6 @@ func (dl *Downloader) runWithReader(reader func(resourceIndex int, reader io.Rea
 		go dl.download(resource, reader)
 	}
 	dl.wg.Wait()
-
-	// 速度计算定时器停止
-	dl.speedTicker.Stop()
 }
 
 func (dl *Downloader) run() {
@@ -177,12 +168,12 @@ func (dl *Downloader) run() {
 func (dl *Downloader) download(resource *Resource, reader func(resourceIndex int, reader io.ReadCloser) io.Reader) {
 	defer dl.wg.Done()
 	dl.pool <- resource
-	finalPath := path.Join(dl.dir, resource.filename)
+	finalPath := path.Join(dl.tsDir, resource.filename)
 
 	// 如果不覆盖下载，文件存在时则无需下载
-	if file.Exists(finalPath) && !resource.override {
+	if exists, err := util.FileExists(finalPath); nil == err && exists && !resource.override {
 		// 也表示完成一个任务
-		dl.finished <- <-dl.pool
+		dl.resourceFinish <- <-dl.pool
 		return
 	}
 
@@ -219,15 +210,38 @@ func (dl *Downloader) download(resource *Resource, reader func(resourceIndex int
 	}
 
 	// 完成一个任务
-	dl.finished <- <-dl.pool
+	dl.resourceFinish <- <-dl.pool
 }
 
-func (dl *Downloader) calcSpeed() {
-	go func() {
-		for _ = range dl.speedTicker.C {
-			delta := dl.currentSize - dl.lastSize
-			dl.speed = util.FormatFileSize(delta) + "/s"
-			dl.lastSize = dl.currentSize
+func (dl *Downloader) CalcSpeed(d time.Duration) string {
+	if !dl.started {
+		return "正在准备..."
+	}
+	if dl.merger.finished {
+		return "下载完成"
+	}
+	if dl.allFinished {
+		return "正在合并..."
+	}
+	// 下载中
+	deltaSize := dl.currentSize - dl.lastSize
+	dl.lastSize = dl.currentSize
+	return util.FormatFileSize(deltaSize/uint64(d.Seconds())) + "/s"
+}
+
+func (dl *Downloader) CalcProgress() float64 {
+	if dl.totalCount > 0 {
+		// 下载过程占 96%，合并过程占 4%
+		downloadProgress := float64(dl.downloadedCount) / float64(dl.totalCount)
+		if !dl.allFinished {
+			// 下载未结束
+			return downloadProgress * 0.96
 		}
-	}()
+		if dl.allFinished && dl.merger.finished {
+			// 已经合并完成
+			return 1.0
+		}
+		return downloadProgress
+	}
+	return 0
 }

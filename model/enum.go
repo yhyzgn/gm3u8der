@@ -23,6 +23,7 @@ const (
 const (
 	Downloading Status = iota
 	Paused
+	Merging
 	Finished
 	Deleted
 )

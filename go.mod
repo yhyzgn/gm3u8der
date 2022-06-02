@@ -5,7 +5,6 @@ go 1.18
 require (
 	fyne.io/fyne/v2 v2.1.4
 	github.com/ncruces/zenity v0.8.7
-	github.com/yhyzgn/goat v1.0.37
 	github.com/yhyzgn/m3u8 v1.0.0
 	gorm.io/driver/sqlite v1.3.2
 	gorm.io/gorm v1.23.5
@@ -34,6 +33,7 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.37.0 // indirect
+	github.com/yhyzgn/goat v1.0.37 // indirect
 	github.com/yhyzgn/gog v1.2.2 // indirect
 	github.com/yhyzgn/golus v1.1.2 // indirect
 	github.com/yuin/goldmark v1.3.8 // indirect
