@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	appID = "com.yhyzgn.gm3u8der"
 	title = "gm3u8der"
 )
 
@@ -23,7 +24,7 @@ func main() {
 	db.Init()
 	holder.Init()
 
-	der := app.New()
+	der := app.NewWithID(appID)
 
 	// 设置主题
 	der.Settings().SetTheme(thm.NewFontTheme())
