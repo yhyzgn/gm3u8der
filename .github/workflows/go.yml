@@ -34,19 +34,19 @@ jobs:
 
       - name: Build linux
         if: matrix.os == 'ubuntu-latest'
-        run: fyne package -os linux -icon "assets/img/logo.png""
+        run: fyne package -os linux -icon "assets/img/logo.png"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build mac
         if: matrix.os == 'macos-latest'
-        run: fyne package -os darwin -icon "assets/img/logo.png""
+        run: fyne package -os darwin -icon "assets/img/logo.png"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build windows
         if: matrix.os == 'windows-latest'
-        run: fyne package -os windows -icon "assets/img/logo.png""
+        run: fyne package -os windows -icon "assets/img/logo.png"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
