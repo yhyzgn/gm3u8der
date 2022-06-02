@@ -9,28 +9,24 @@ package main
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"gm3u8der/cst"
 	"gm3u8der/db"
 	"gm3u8der/holder"
 	"gm3u8der/thm"
 	"gm3u8der/ui"
 )
 
-const (
-	appID = "com.yhyzgn.gm3u8der"
-	title = "gm3u8der"
-)
-
 func main() {
 	db.Init()
 	holder.Init()
 
-	der := app.NewWithID(appID)
+	der := app.NewWithID(cst.AppID)
 
 	// 设置主题
 	der.Settings().SetTheme(thm.NewFontTheme())
 
 	// 主窗体
-	main := der.NewWindow(title)
+	main := der.NewWindow(cst.Title)
 	// 设置图标
 	ui.Icon(main)
 

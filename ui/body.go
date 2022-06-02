@@ -27,12 +27,6 @@ import (
 	"time"
 )
 
-const (
-	icAdd      = "./assets/img/ic_add.png"
-	icDelete   = "./assets/img/ic_delete.png"
-	icSettings = "./assets/img/ic_settings.png"
-)
-
 var (
 	divLine = canvas.NewLine(theme.ShadowColor())
 
@@ -53,12 +47,12 @@ func Body(win fyne.Window) {
 
 	// 创建工具栏
 	toolBar := widget.NewToolbar(
-		widget.NewToolbarAction(util.LoadResourceFromFile(icAdd), func() {
+		widget.NewToolbarAction(resourceIcaddPng, func() {
 			showURLDialog(win, "")
 		}),
-		widget.NewToolbarAction(util.LoadResourceFromFile(icDelete), func() {}),
+		widget.NewToolbarAction(resourceIcdeletePng, func() {}),
 		widget.NewToolbarSpacer(),
-		widget.NewToolbarAction(util.LoadResourceFromFile(icSettings), func() {
+		widget.NewToolbarAction(resourceIcsettingsPng, func() {
 			wdSaveDir := widget.NewEntry()
 			wdSaveDir.SetText(holder.Settings.SaveDir)
 			wdBtnOpenDir := widget.NewButton("选择", func() {
@@ -166,7 +160,9 @@ func showURLDialog(win fyne.Window, providedURL string) {
 
 	// 媒体名称
 	wdName := widget.NewEntry()
-	wdName.SetText(util.SHA1(providedURL))
+	if "" != providedURL {
+		wdName.SetText(util.SHA1(providedURL))
+	}
 
 	fiM3u8URL := &widget.FormItem{
 		Text:   "M3U8链接",

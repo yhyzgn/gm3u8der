@@ -1,4 +1,4 @@
-name: Go
+name: Release
 
 on:
   push:
@@ -22,11 +22,8 @@ jobs:
       - name: Built env
         id: date
         run: |
+          echo "runNumber=$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
           echo "version=v$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
-          echo "builtDate=$(TZ=UTC-8 date '+%Y-%m-%d')" >> $GITHUB_ENV
-
-      - name: Test env
-        run: echo ${{ env.version }}
 
       - name: Set up Go 1.18
         uses: actions/setup-go@v3
@@ -43,28 +40,27 @@ jobs:
 
       - name: Build linux
         if: matrix.os == 'ubuntu-latest'
-        run: fyne package -os linux -icon "assets/img/icon.png" -appVersion "${{ env.version }}" -appBuild "$GITHUB_RUN_NUMBER"
+        run: fyne package -os linux -icon "assets/img/icon.png" -appVersion "${{ env.version }}" -appBuild "${{ env.runNumber }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build mac
         if: matrix.os == 'macos-latest'
-        run: fyne package -os darwin -icon "assets/img/icon.png" -appVersion "${{ env.version }}" -appBuild "$GITHUB_RUN_NUMBER"
+        run: fyne package -os darwin -icon "assets/img/icon.png" -appVersion "${{ env.version }}" -appBuild "${{ env.runNumber }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build windows
         if: matrix.os == 'windows-latest'
-        run: fyne package -os windows -icon "assets/img/icon.png" -appVersion "${{ env.version }}" -appBuild "$GITHUB_RUN_NUMBER"
+        run: fyne package -os windows -icon "assets/img/icon.png" -appVersion "${{ env.version }}" -appBuild "${{ env.runNumber }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Gzip linux
         if: matrix.os == 'ubuntu-latest'
         run: |
-          mkdir gm3u8der-linux-amd64/assets
-          cp gm3u8der gm3u8der-linux-amd64/gm3u8der
-          cp -r assets gm3u8der-linux-amd64/assets
+          mkdir gm3u8der-linux-amd64
+          cp gm3u8der.tar.gz gm3u8der-linux-amd64/gm3u8der.tar.gz
           tar -czvf gm3u8der-linux-amd64-${{ env.version }}.tar.gz gm3u8der-linux-amd64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,9 +68,8 @@ jobs:
       - name: Gzip mac
         if: matrix.os == 'macos-latest'
         run: |
-          mkdir gm3u8der-mac-amd64/assets
+          mkdir gm3u8der-mac-amd64
           cp gm3u8der.app gm3u8der-mac-amd64/gm3u8der.app
-          cp -r assets gm3u8der-mac-amd64/assets
           tar -czvf gm3u8der-mac-amd64-${{ env.version }}.tar.gz gm3u8der-mac-amd64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,7 +79,6 @@ jobs:
         run: |
           mkdir gm3u8der-windows-amd64
           cp gm3u8der.exe gm3u8der-windows-amd64/gm3u8der.exe
-          cp -r assets gm3u8der-windows-amd64/assets
           tar -czvf gm3u8der-windows-amd64-${{ env.version }}.tar.gz gm3u8der-windows-amd64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,22 +7,34 @@
 package db
 
 import (
+	"gm3u8der/cst"
 	"gm3u8der/util"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"os"
+	"path"
 	"sync"
 )
 
 const (
-	storeDir   = "./.store"
-	dbFilename = storeDir + "/sqlite.db"
+	AppID = "com.yhyzgn.gm3u8der"
 )
 
 var (
-	once     sync.Once
-	Instance *gorm.DB
+	once       sync.Once
+	storeDir   string
+	dbFilename string
+	Instance   *gorm.DB
 )
+
+func init() {
+	configDir, err := os.UserConfigDir()
+	if nil != err {
+		panic(err)
+	}
+	storeDir = path.Join(configDir, cst.AppID)
+	dbFilename = path.Join(storeDir, "sqlite.db")
+}
 
 func Init() {
 	once.Do(func() {
