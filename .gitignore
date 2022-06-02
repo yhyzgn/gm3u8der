@@ -18,6 +18,8 @@
 
 .idea/
 
+.store/
+
 *.tmp
 
 go_build_*
