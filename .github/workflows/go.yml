@@ -36,8 +36,8 @@ jobs:
       - name: Get dependencies windows
         if: matrix.os == 'windows-latest'
         run: |
-          for /f %%i in ('go env GOPATH') do set goPath=%%i
-          setx -m PATH "%PATH%;%goPath%/bin"
+          $goPath = (go get GOPATH)
+          [Environment]::SetEnvironmentVariable("PATH", $Env:PATH  + ";$goPath\bin", [EnvironmentVariableTarget]::Machine)
           go install fyne.io/fyne/v2/cmd/fyne@latest
 
       - name: Build linux
