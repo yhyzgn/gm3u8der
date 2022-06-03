@@ -37,7 +37,8 @@ jobs:
       - name: Get dependencies mac
         if:  matrix.os == 'macos-latest'
         run: |
-          xcode-select --install
+          sudo rm -rf /Library/Developer/CommandLineTools
+          sudo xcode-select --install
           export PATH=$PATH:$(go env GOPATH)/bin
           go install fyne.io/fyne/v2/cmd/fyne@latest
 
