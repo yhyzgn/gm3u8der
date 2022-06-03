@@ -37,7 +37,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           $goPath = (go get GOPATH)
-          [Environment]::SetEnvironmentVariable("PATH", $Env:PATH  + ";$goPath\bin", [EnvironmentVariableTarget]::Machine)
+          [Environment]::SetEnvironmentVariable("PATH", $Env:PATH  + ";" + $goPath + "\bin", [EnvironmentVariableTarget]::Machine)
           go install fyne.io/fyne/v2/cmd/fyne@latest
 
       - name: Build linux
