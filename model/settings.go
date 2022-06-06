@@ -16,6 +16,7 @@ type Settings struct {
 	SaveDir   string  `json:"saveDir" gorm:"column:save_dir;type:varchar(255);"`
 	ExtType   ExtType `json:"extType" gorm:"column:ext_type;type:int(11);"`
 	TaskCount int     `json:"taskCount" gorm:"column:task_count;type:int(11);"`
+	Clipboard bool    `json:"clipboard" gorm:"column:clipboard;type:tinyint(1);"`
 }
 
 func NewSettings() *Settings {
@@ -35,6 +36,7 @@ func (s *Settings) Load() *Settings {
 	s.SaveDir = temp.SaveDir
 	s.ExtType = temp.ExtType
 	s.TaskCount = temp.TaskCount
+	s.Clipboard = temp.Clipboard
 
 	return s
 }
@@ -48,6 +50,7 @@ func (s *Settings) storeDefault() {
 	s.SaveDir = util.SystemDownloadDir()
 	s.ExtType = MP4
 	s.TaskCount = 5
+	s.Clipboard = true
 
 	s.store()
 }

@@ -105,7 +105,7 @@ jobs:
           mkdir gm3u8der-windows-amd64
           cp gm3u8der.exe gm3u8der-windows-amd64/gm3u8der.exe
           tar -czvf gm3u8der-windows-amd64-${{ env.tagName }}_${{ env.runNumber }}.tar.gz gm3u8der-windows-amd64
-          cp ffmpeg/ffmpeg.exe gm3u8der-windows-amd64/ffmpeg.exe
+          cp ffmpeg/ffmpeg.win gm3u8der-windows-amd64/ffmpeg.exe
           tar -czvf gm3u8der-windows-amd64-with-ffmpeg-${{ env.tagName }}_${{ env.runNumber }}.tar.gz gm3u8der-windows-amd64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -114,8 +114,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          body: |
-            [最新版本下载](https://github.com/yhyzgn/gm3u8der/releases)
           files: "*.tar.gz"
           token: ${{ secrets.GITHUB_TOKEN }}
 

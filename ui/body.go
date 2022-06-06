@@ -74,7 +74,11 @@ func Body(win fyne.Window) {
 			wdTaskCount.SetText(strconv.Itoa(holder.Settings.TaskCount))
 			taskCount := widget.NewFormItem("同时下载任务数", wdTaskCount)
 
-			items := []*widget.FormItem{itemSelectDir, fiExt, taskCount}
+			wdCheckClipboard := widget.NewCheck("是否开启", func(b bool) {})
+			wdCheckClipboard.Checked = holder.Settings.Clipboard
+			ckClipboard := widget.NewFormItem("监听剪切板", wdCheckClipboard)
+
+			items := []*widget.FormItem{itemSelectDir, fiExt, taskCount, ckClipboard}
 			var dlg dialog.Dialog
 			dlg = dialog.NewForm("设置", "保存", "取消", items, func(b bool) {
 				if b {
@@ -90,6 +94,7 @@ func Body(win fyne.Window) {
 					holder.Settings.SaveDir = wdSaveDir.Text
 					holder.Settings.ExtType = model.ParseExtType(rg.Selected)
 					holder.Settings.TaskCount = taskCount
+					holder.Settings.Clipboard = wdCheckClipboard.Checked
 
 					// 保存
 					holder.Settings.Store()
