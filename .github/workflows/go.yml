@@ -16,14 +16,14 @@ jobs:
 
     steps:
       - name: Built env linux and macos
-        if: {{matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'}}
+        if: ${{matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'}}
         id: date
         run: |
           echo "runNumber=$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
           echo "tagName=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
 
       - name: Built env windows
-        if: {{matrix.os == 'windows-latest'}}
+        if: matrix.os == 'windows-latest'
         id: date
         run: |
           $tagName = (git describe --tags --abbrev=0)
