@@ -18,6 +18,7 @@ import (
 	m3u8Model "github.com/yhyzgn/m3u8/model"
 	"gm3u8der/component"
 	"gm3u8der/dl"
+	"gm3u8der/env"
 	"gm3u8der/holder"
 	"gm3u8der/model"
 	"gm3u8der/util"
@@ -138,14 +139,17 @@ func Body(win fyne.Window) {
 		listDownloading,
 	)
 
+	win.SetContent(content)
+
+	// UI设置后，检查环境
+	env.Check(win)
+
 	// 定时刷新列表
 	component.StartTicker(time.Second*2, func() {
 		if nil != listDownloading && nil != bdDownLoadingList && len(bdDownLoadingList) > 0 {
 			listDownloading.Refresh()
 		}
 	})
-
-	win.SetContent(content)
 }
 
 func showURLDialog(win fyne.Window, providedURL string) {

@@ -7,7 +7,6 @@
 package holder
 
 import (
-	_ "gm3u8der/env"
 	"gm3u8der/model"
 )
 

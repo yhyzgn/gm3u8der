@@ -29,7 +29,6 @@ func main() {
 	main := der.NewWindow(cst.Title)
 	// 设置图标
 	ui.Icon(main)
-
 	// 设置主窗体
 	ui.Body(main)
 
