@@ -15,6 +15,14 @@ jobs:
         os: [ windows-latest ]
 
     steps:
+      - name: Set up Go 1.18
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
       - name: Built env linux and macos
         if: ${{matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'}}
         run: |
@@ -27,14 +35,6 @@ jobs:
           $tagName = (git describe --tags --abbrev=0)
           echo "runNumber=$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
           echo "tagName=$tagName" >> $GITHUB_ENV
-
-      - name: Set up Go 1.18
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
 
       - name: Get dependencies linux
         if: matrix.os == 'ubuntu-latest'
