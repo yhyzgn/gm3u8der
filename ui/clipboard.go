@@ -9,6 +9,7 @@ package ui
 import (
 	"context"
 	"fyne.io/fyne/v2"
+	"gm3u8der/holder"
 	"golang.design/x/clipboard"
 	"log"
 	"regexp"
@@ -33,12 +34,14 @@ func Clipboard(win fyne.Window, showDialog func(m3u8URL string)) {
 func watchClipboard(win fyne.Window, showDialog func(m3u8URL string)) {
 	ch := clipboard.Watch(context.Background(), clipboard.FmtText)
 	for data := range ch {
-		content := string(data)
-		if m3u8URLRegexp.MatchString(content) && content != lastClipboardContent {
-			if nil != showDialog {
-				showDialog(content)
+		if holder.Settings.Clipboard {
+			content := string(data)
+			if m3u8URLRegexp.MatchString(content) && content != lastClipboardContent {
+				if nil != showDialog {
+					showDialog(content)
+				}
+				lastClipboardContent = content
 			}
-			lastClipboardContent = content
 		}
 	}
 }
