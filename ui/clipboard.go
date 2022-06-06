@@ -7,10 +7,11 @@
 package ui
 
 import (
+	"context"
 	"fyne.io/fyne/v2"
-	"gm3u8der/component"
+	"golang.design/x/clipboard"
+	"log"
 	"regexp"
-	"time"
 )
 
 var (
@@ -19,17 +20,25 @@ var (
 )
 
 func Clipboard(win fyne.Window, showDialog func(m3u8URL string)) {
+	err := clipboard.Init()
+	if nil != err {
+		log.Println(err)
+		return
+	}
+
+	// 剪切板初始化成功，开始监听
 	go watchClipboard(win, showDialog)
 }
 
 func watchClipboard(win fyne.Window, showDialog func(m3u8URL string)) {
-	component.StartTicker(time.Second, func() {
-		content := win.Clipboard().Content()
+	ch := clipboard.Watch(context.Background(), clipboard.FmtText)
+	for data := range ch {
+		content := string(data)
 		if m3u8URLRegexp.MatchString(content) && content != lastClipboardContent {
 			if nil != showDialog {
 				showDialog(content)
 			}
 			lastClipboardContent = content
 		}
-	})
+	}
 }
