@@ -139,8 +139,8 @@ func Body(win fyne.Window) {
 	)
 
 	// 定时刷新列表
-	component.StartTicker(time.Second, func() {
-		if nil != listDownloading {
+	component.StartTicker(time.Second*2, func() {
+		if nil != listDownloading && nil != bdDownLoadingList && len(bdDownLoadingList) > 0 {
 			listDownloading.Refresh()
 		}
 	})
