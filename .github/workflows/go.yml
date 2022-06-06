@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
 #        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ macos-latest ]
 
     steps:
       - name: Built env
@@ -82,7 +82,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           mkdir gm3u8der-mac-amd64
-          cp gm3u8der.app gm3u8der-mac-amd64/gm3u8der.app
+          cp -r gm3u8der.app gm3u8der-mac-amd64/
           tar -czvf gm3u8der-mac-amd64-${{ env.tagName }}_${{ env.runNumber }}.tar.gz gm3u8der-mac-amd64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
