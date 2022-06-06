@@ -23,7 +23,7 @@ jobs:
           echo "tagName=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
 
       - name: Built env windows
-        if: {{matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'}}
+        if: {{matrix.os == 'windows-latest'}}
         id: date
         run: |
           $tagName = (git describe --tags --abbrev=0)
