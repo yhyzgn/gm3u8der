@@ -12,7 +12,7 @@ import (
 )
 
 func TestDownload(t *testing.T) {
-	url := "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg.win"
+	url := "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg/ffmpeg.win"
 	filename := "ffmpeg.exe"
 
 	Download(path.Join("./", filename), url)

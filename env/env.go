@@ -19,9 +19,9 @@ import (
 const (
 	ffmpeg    = "ffmpeg" // ffmpeg 命令
 	ffmpegDir = "./"     // ffmpeg 可执行程序所在目录，为达到环境变量优先，这里设置为当前程序运行的目录
-	windows   = "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg.win"
-	mac       = "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg.mac"
-	linux     = "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg.lnx"
+	windows   = "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg/ffmpeg.win"
+	mac       = "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg/ffmpeg.mac"
+	linux     = "https://github.91chi.fun/https://raw.githubusercontent.com/yhyzgn/gm3u8der/main/ffmpeg/ffmpeg.lnx"
 )
 
 func Check(win fyne.Window) {
