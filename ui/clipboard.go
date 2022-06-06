@@ -20,7 +20,7 @@ var (
 	lastClipboardContent = ""
 )
 
-func Clipboard(win fyne.Window, showDialog func(m3u8URL string)) {
+func Clipboard(win fyne.Window, showDialog func(m3u8URL string, onShowed func())) {
 	err := clipboard.Init()
 	if nil != err {
 		log.Println(err)
@@ -31,16 +31,17 @@ func Clipboard(win fyne.Window, showDialog func(m3u8URL string)) {
 	go watchClipboard(win, showDialog)
 }
 
-func watchClipboard(win fyne.Window, showDialog func(m3u8URL string)) {
+func watchClipboard(win fyne.Window, showDialog func(m3u8URL string, onShowed func())) {
 	ch := clipboard.Watch(context.Background(), clipboard.FmtText)
 	for data := range ch {
 		if holder.Settings.Clipboard {
 			content := string(data)
 			if m3u8URLRegexp.MatchString(content) && content != lastClipboardContent {
 				if nil != showDialog {
-					showDialog(content)
+					showDialog(content, func() {
+						lastClipboardContent = content
+					})
 				}
-				lastClipboardContent = content
 			}
 		}
 	}

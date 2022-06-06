@@ -33,6 +33,8 @@ var (
 
 	listDownloading   *widget.List
 	bdDownLoadingList = make([]*model.MediaItem, 0)
+
+	dlgURLShowing = false // 弹窗是否正在显示
 )
 
 func init() {
@@ -41,14 +43,26 @@ func init() {
 
 func Body(win fyne.Window) {
 	// 监视剪贴板
-	Clipboard(win, func(m3u8URL string) {
-		showURLDialog(win, m3u8URL)
+	Clipboard(win, func(m3u8URL string, onShowed func()) {
+		if !dlgURLShowing {
+			dlgURLShowing = true
+			showURLDialog(win, m3u8URL, func() {
+				dlgURLShowing = false
+			})
+
+			onShowed()
+		}
 	})
 
 	// 创建工具栏
 	toolBar := widget.NewToolbar(
 		widget.NewToolbarAction(resourceIcaddPng, func() {
-			showURLDialog(win, "")
+			if !dlgURLShowing {
+				dlgURLShowing = true
+				showURLDialog(win, "", func() {
+					dlgURLShowing = false
+				})
+			}
 		}),
 		widget.NewToolbarAction(resourceIcdeletePng, func() {}),
 		widget.NewToolbarSpacer(),
@@ -157,7 +171,7 @@ func Body(win fyne.Window) {
 	})
 }
 
-func showURLDialog(win fyne.Window, providedURL string) {
+func showURLDialog(win fyne.Window, providedURL string, onClosed func()) {
 	rg := widget.NewRadioGroup([]string{"MP4", "MKV", "AVI", "TS"}, func(s string) {})
 	rg.SetSelected(model.MapExtType(holder.Settings.ExtType))
 	rg.Horizontal = true
@@ -260,5 +274,8 @@ func showURLDialog(win fyne.Window, providedURL string) {
 	dlg.Resize(fyne.Size{
 		Width: 700,
 	})
+	if nil != onClosed {
+		dlg.SetOnClosed(onClosed)
+	}
 	dlg.Show()
 }
