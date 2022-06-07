@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 echo package...
-fyne package -icon "assets/img/logo.png"
+fyne package -icon "assets/img/logo.png" -name "gm3u8der" -appID "com.yhyzgn.gm3u8der"
 echo packaged, closing...
 sleep 2s
