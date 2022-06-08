@@ -16,10 +16,6 @@ import (
 	"sync"
 )
 
-const (
-	AppID = "com.yhyzgn.gm3u8der"
-)
-
 var (
 	once       sync.Once
 	storeDir   string

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2"
 	"gm3u8der/util"
 	"gm3u8der/wgt"
+	"log"
 	"os/exec"
 	"path"
 	"runtime"
@@ -55,5 +56,6 @@ func dispatchFfmpegDownload() {
 
 // 下载 ffmpeg
 func ffmpegDownload(url, name string) {
+	log.Println()
 	util.Download(path.Join(ffmpegDir, name), url)
 }
