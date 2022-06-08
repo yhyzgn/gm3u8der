@@ -6,7 +6,9 @@
 
 package component
 
-import "time"
+import (
+	"time"
+)
 
 type TickDoer func()
 
@@ -33,8 +35,6 @@ func (tt *TimeTicker) run() {
 		select {
 		case <-tt.ticker.C:
 			tt.doer()
-		default:
-			// do nothing
 		}
 	}
 }

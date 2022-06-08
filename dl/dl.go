@@ -13,6 +13,7 @@ import (
 	"github.com/yhyzgn/m3u8/model"
 	"github.com/yhyzgn/m3u8/net"
 	"github.com/yhyzgn/m3u8/parser"
+	"gm3u8der/component"
 	"gm3u8der/util"
 	"io"
 	"io/ioutil"
@@ -39,7 +40,11 @@ type Downloader struct {
 	downloadedCount int
 	started         bool
 	allFinished     bool
+	progress        float64
+	speed           string
 	merger          *merger
+	speedTicker     *component.TimeTicker
+	progressTicker  *component.TimeTicker
 }
 
 func New(m3u8URL, saveDir, name, extName string) *Downloader {
@@ -63,6 +68,14 @@ func New(m3u8URL, saveDir, name, extName string) *Downloader {
 			convert:       ".ts" != extName,
 		},
 	}
+}
+
+func (dl *Downloader) Speed() string {
+	return dl.speed
+}
+
+func (dl *Downloader) Progress() float64 {
+	return dl.progress
 }
 
 func (dl *Downloader) Start(resolutionSelector func(playList []model.PlayItem, d *Downloader)) {
@@ -134,7 +147,19 @@ func (dl *Downloader) start(tsList []model.TS) {
 				dl.merger.manifest = manifestFile
 
 				// 开始合并视频片段
-				dl.merger.apply()
+				dl.merger.apply(func() {
+					// 下载完成后，停止计时器
+					if nil != dl.speedTicker {
+						dl.speedTicker.Stop()
+						dl.speedTicker = nil
+					}
+
+					// 下载完成后，停止计时器
+					if nil != dl.progressTicker {
+						dl.progressTicker.Stop()
+						dl.progressTicker = nil
+					}
+				})
 			}
 		}
 	}(tsNames, tsFile)
@@ -148,6 +173,16 @@ func (dl *Downloader) start(tsList []model.TS) {
 		data, _ = crypt.AES128Decrypt(data, keyMap[string(key.Method)+"-"+key.URI], []byte(key.IV))
 		return bytes.NewReader(data)
 	})
+
+	// 计算速度
+	go func() {
+		dl.speedTicker = component.StartTicker(1*time.Second, dl.calcSpeed)
+	}()
+
+	// 计算进度
+	go func() {
+		dl.progressTicker = component.StartTicker(1*time.Second, dl.calcProgress)
+	}()
 }
 
 func (dl *Downloader) runWithReader(reader func(resourceIndex int, reader io.ReadCloser) io.Reader) {
@@ -213,35 +248,41 @@ func (dl *Downloader) download(resource *Resource, reader func(resourceIndex int
 	dl.resourceFinish <- <-dl.pool
 }
 
-func (dl *Downloader) CalcSpeed(d time.Duration) string {
+func (dl *Downloader) calcSpeed() {
 	if !dl.started {
-		return "正在准备..."
+		dl.speed = "正在准备..."
+		return
 	}
 	if dl.merger.finished {
-		return "下载完成"
+		dl.speed = "下载完成"
+		return
 	}
 	if dl.allFinished {
-		return "正在合并..."
+		dl.speed = "正在合并..."
+		return
 	}
 	// 下载中
 	deltaSize := dl.currentSize - dl.lastSize
 	dl.lastSize = dl.currentSize
-	return util.FormatFileSize(deltaSize/uint64(d.Seconds())) + "/s"
+	dl.speed = util.FormatFileSize(deltaSize) + "/s"
 }
 
-func (dl *Downloader) CalcProgress() float64 {
+func (dl *Downloader) calcProgress() {
 	if dl.totalCount > 0 {
 		// 下载过程占 96%，合并过程占 4%
 		downloadProgress := float64(dl.downloadedCount) / float64(dl.totalCount)
 		if !dl.allFinished {
 			// 下载未结束
-			return downloadProgress * 0.96
+			dl.progress = downloadProgress * 0.96
+			return
 		}
 		if dl.allFinished && dl.merger.finished {
 			// 已经合并完成
-			return 1.0
+			dl.progress = 1.0
+			return
 		}
-		return downloadProgress
+		dl.progress = downloadProgress
+		return
 	}
-	return 0
+	dl.progress = 0
 }

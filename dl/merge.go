@@ -13,6 +13,8 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"syscall"
+	"time"
 )
 
 const (
@@ -29,23 +31,25 @@ type merger struct {
 	finished      bool
 }
 
-func (m *merger) apply() {
+func (m *merger) apply(onFinished func()) {
 	// 合并切片
 	if m.convert {
 		// 并转换视频格式
-		m.mergeByFfmpeg()
+		m.mergeByFfmpeg(onFinished)
 	} else {
 		// 仅合并
-		m.merge()
+		m.merge(onFinished)
 	}
 }
 
 // 合并切片，并转换视频格式
-func (m *merger) mergeByFfmpeg() {
+func (m *merger) mergeByFfmpeg(onFinished func()) {
 	// 组装命令参数：ffmpeg -i "xxx.txt" -acodec copy -vcodec copy -absf aac_adtstoasc out.mp4
 	cmdArgs := []string{"-y", "-f", "concat", "-i", m.manifest, "-acodec", "copy", "-vcodec", "copy", "-absf", "aac_adtstoasc", m.mediaPath}
 
 	cmd := exec.Command(ffmpeg, cmdArgs...)
+	// 隐藏命令行窗口
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	if err := cmd.Run(); err == nil {
 		// 合并完成，删除ts目录
@@ -54,6 +58,10 @@ func (m *merger) mergeByFfmpeg() {
 			log.Println(err)
 		} else {
 			m.finished = true
+			go func() {
+				time.Sleep(2 * time.Second)
+				onFinished()
+			}()
 		}
 	} else {
 		fmt.Println(err)
@@ -61,7 +69,7 @@ func (m *merger) mergeByFfmpeg() {
 }
 
 // 直接合并成ts文件
-func (m *merger) merge() {
+func (m *merger) merge(onFinished func()) {
 	if nil == m.names {
 		return
 	}
@@ -87,6 +95,10 @@ func (m *merger) merge() {
 			fmt.Println(err)
 		} else {
 			m.finished = true
+			go func() {
+				time.Sleep(2 * time.Second)
+				onFinished()
+			}()
 		}
 	} else {
 		fmt.Println(err)

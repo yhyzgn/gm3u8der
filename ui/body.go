@@ -146,7 +146,7 @@ func Body(win fyne.Window) {
 			name = append(name, end...)
 		}
 		info.Objects[0].(*widget.Label).SetText(string(name) + item.ExtName())
-		info.Objects[2].(*widget.Label).SetText(item.Speed(time.Second))
+		info.Objects[2].(*widget.Label).SetText(item.Speed())
 
 		progress.SetValue(item.Progress())
 	})
@@ -164,7 +164,7 @@ func Body(win fyne.Window) {
 	env.Check(win)
 
 	// 定时刷新列表
-	component.StartTicker(time.Second*2, func() {
+	component.StartTicker(time.Second*1, func() {
 		if nil != listDownloading && nil != bdDownLoadingList && len(bdDownLoadingList) > 0 {
 			listDownloading.Refresh()
 		}

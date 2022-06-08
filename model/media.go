@@ -10,7 +10,6 @@ import (
 	"github.com/yhyzgn/m3u8/model"
 	"gm3u8der/dl"
 	"strings"
-	"time"
 )
 
 type MediaItem struct {
@@ -30,18 +29,18 @@ func (mi *MediaItem) Download(saveDir string, resolutionSelector func(playList [
 	mi.Downloader.Start(resolutionSelector)
 }
 
-func (mi *MediaItem) Speed(d time.Duration) string {
+func (mi *MediaItem) Speed() string {
 	if nil == mi.Downloader {
 		return "正在准备..."
 	}
-	return mi.Downloader.CalcSpeed(d)
+	return mi.Downloader.Speed()
 }
 
 func (mi *MediaItem) Progress() float64 {
 	if nil == mi.Downloader {
 		return 0
 	}
-	progress := mi.Downloader.CalcProgress()
+	progress := mi.Downloader.Progress()
 	if progress == 1 {
 		mi.Status = Finished
 	} else if progress >= 0.96 {
