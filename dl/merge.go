@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -49,7 +50,9 @@ func (m *merger) mergeByFfmpeg(onFinished func()) {
 
 	cmd := exec.Command(ffmpeg, cmdArgs...)
 	// 隐藏命令行窗口
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if runtime.GOOS == "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	}
 
 	if err := cmd.Run(); err == nil {
 		// 合并完成，删除ts目录
