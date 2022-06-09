@@ -13,8 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"runtime"
-	"syscall"
 	"time"
 )
 
@@ -24,7 +22,7 @@ const (
 
 type merger struct {
 	tsDir         string
-	mediaPath     string
+	mediaFilePath string
 	mediaFilename string
 	names         []string
 	manifest      string
@@ -46,13 +44,11 @@ func (m *merger) apply(onFinished func()) {
 // 合并切片，并转换视频格式
 func (m *merger) mergeByFfmpeg(onFinished func()) {
 	// 组装命令参数：ffmpeg -i "xxx.txt" -acodec copy -vcodec copy -absf aac_adtstoasc out.mp4
-	cmdArgs := []string{"-y", "-f", "concat", "-i", m.manifest, "-acodec", "copy", "-vcodec", "copy", "-absf", "aac_adtstoasc", m.mediaPath}
+	cmdArgs := []string{"-y", "-f", "concat", "-i", m.manifest, "-acodec", "copy", "-vcodec", "copy", "-absf", "aac_adtstoasc", m.mediaFilePath}
 
 	cmd := exec.Command(ffmpeg, cmdArgs...)
-	// 隐藏命令行窗口
-	if runtime.GOOS == "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	}
+	// 尝试隐藏命令行窗口
+	applySysProcAttr(cmd)
 
 	if err := cmd.Run(); err == nil {
 		// 合并完成，删除ts目录
@@ -85,7 +81,7 @@ func (m *merger) merge(onFinished func()) {
 			err = e
 			break
 		}
-		e = util.Append(m.mediaPath, bs)
+		e = util.Append(m.mediaFilePath, bs)
 		if nil != e {
 			err = e
 			break

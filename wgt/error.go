@@ -11,10 +11,16 @@ import (
 	"fyne.io/fyne/v2/dialog"
 )
 
-func ShowErrorDialog(title, message string, win fyne.Window, okCallback func()) {
-	dialog.NewConfirm(title, message, func(ok bool) {
-		if ok {
-			okCallback()
+func ShowErrorDialog(title, message string, win fyne.Window, okCallback func(), cancelCallback func()) {
+	dialog.NewConfirm(title, message, func(innerOk bool) {
+		if innerOk {
+			if nil != okCallback {
+				okCallback()
+			}
+		} else {
+			if nil != cancelCallback {
+				cancelCallback()
+			}
 		}
 	}, win).Show()
 }

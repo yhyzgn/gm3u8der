@@ -24,9 +24,9 @@ func (mi *MediaItem) ExtName() string {
 	return "." + strings.ToLower(MapExtType(mi.ExtType))
 }
 
-func (mi *MediaItem) Download(saveDir string, resolutionSelector func(playList []model.PlayItem, d *dl.Downloader)) {
+func (mi *MediaItem) Download(saveDir string, resolutionSelector func(playList []model.PlayItem, d *dl.Downloader), overrideTip func(mediaFilename string, override chan bool), onStarted func()) {
 	mi.Downloader = dl.New(mi.URL, saveDir, mi.Name, mi.ExtName())
-	mi.Downloader.Start(resolutionSelector)
+	mi.Downloader.Start(resolutionSelector, overrideTip, onStarted)
 }
 
 func (mi *MediaItem) Speed() string {

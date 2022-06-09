@@ -64,7 +64,7 @@ func Body(win fyne.Window) {
 				})
 			}
 		}),
-		widget.NewToolbarAction(resourceIcdeletePng, func() {}),
+		//widget.NewToolbarAction(resourceIcdeletePng, func() {}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(resourceIcsettingsPng, func() {
 			wdSaveDir := widget.NewEntry()
@@ -102,7 +102,7 @@ func Body(win fyne.Window) {
 						wgt.ShowErrorDialog("任务数必须是数字", "是否返回输入？", win, func() {
 							taskCount = holder.Settings.TaskCount
 							dlg.Show()
-						})
+						}, nil)
 						return
 					}
 					holder.Settings.SaveDir = wdSaveDir.Text
@@ -117,6 +117,7 @@ func Body(win fyne.Window) {
 			dlg.Resize(fyne.Size{Width: 600})
 			dlg.Show()
 		}),
+		widget.NewToolbarAction(theme.InfoIcon(), func() {}),
 	)
 
 	listDownloading = widget.NewList(func() int {
@@ -208,14 +209,14 @@ func showURLDialog(win fyne.Window, providedURL string, onClosed func()) {
 			if valM3u8URL == "" {
 				wgt.ShowErrorDialog("m3u8地址错误", "是否重新输入？", win, func() {
 					dlg.Show()
-				})
+				}, nil)
 				return
 			}
 			valMediaName := fiMediaName.Widget.(*widget.Entry).Text
 			if valMediaName == "" {
 				wgt.ShowErrorDialog("媒体文件名称为空", "是否返回输入？", win, func() {
 					dlg.Show()
-				})
+				}, nil)
 				return
 			}
 
@@ -259,14 +260,30 @@ func showURLDialog(win fyne.Window, providedURL string, onClosed func()) {
 						// 确定
 						piSelected := playList[itemIndexMap[rgResolution.Selected]]
 						item.URL = piSelected.URL
-						item.Download(holder.Settings.SaveDir, selector)
+						item.Download(holder.Settings.SaveDir, selector, func(mediaFilename string, override chan bool) {
+							wgt.ShowErrorDialog("警告", "文件【"+mediaFilename+"】已存在，是否覆盖下载？", win, func() {
+								override <- true
+							}, func() {
+								override <- false
+							})
+						}, func() {
+							// 开始后将媒体添加到列表
+							bdDownLoadingList = append([]*model.MediaItem{item}, bdDownLoadingList...)
+						})
 					}
 					// 取消就不管啦
 				}, win)
 			}
-			item.Download(holder.Settings.SaveDir, selector)
-
-			bdDownLoadingList = append([]*model.MediaItem{item}, bdDownLoadingList...)
+			item.Download(holder.Settings.SaveDir, selector, func(mediaFilename string, override chan bool) {
+				wgt.ShowErrorDialog("警告", "文件【"+mediaFilename+"】已存在，是否覆盖下载？", win, func() {
+					override <- true
+				}, func() {
+					override <- false
+				})
+			}, func() {
+				// 开始后将媒体添加到列表
+				bdDownLoadingList = append([]*model.MediaItem{item}, bdDownLoadingList...)
+			})
 		} else {
 			// 取消
 		}

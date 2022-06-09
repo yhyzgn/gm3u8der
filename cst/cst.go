@@ -8,5 +8,5 @@ package cst
 
 const (
 	AppID = "com.yhyzgn.gm3u8der"
-	Title = "gm3u8der"
+	Title = "m3u8 下载器"
 )

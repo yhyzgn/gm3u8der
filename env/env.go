@@ -28,7 +28,7 @@ const (
 func Check(win fyne.Window) {
 	// 预先检查程序是否存在
 	if _, err := exec.LookPath(ffmpeg); nil != err {
-		wgt.ShowErrorDialog("错误", "ffmpeg组件缺失，是否下载安装？", win, dispatchFfmpegDownload)
+		wgt.ShowErrorDialog("错误", "ffmpeg组件缺失，是否下载安装？", win, dispatchFfmpegDownload, nil)
 	}
 }
 

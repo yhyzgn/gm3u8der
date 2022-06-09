@@ -43,12 +43,11 @@ type Downloader struct {
 	progress        float64
 	speed           string
 	merger          *merger
-	speedTicker     *component.TimeTicker
-	progressTicker  *component.TimeTicker
+	calcTicker      *component.TimeTicker
 }
 
 func New(m3u8URL, saveDir, name, extName string) *Downloader {
-	tsDir := path.Join(saveDir, "ts_"+util.SHA1(m3u8URL))
+	tsDir := path.Join(saveDir, "ts_"+name)
 	mediaFile := name + extName
 	mediaPath := path.Join(saveDir, mediaFile)
 
@@ -63,7 +62,7 @@ func New(m3u8URL, saveDir, name, extName string) *Downloader {
 		m3u8URL:        m3u8URL,
 		merger: &merger{
 			tsDir:         tsDir,
-			mediaPath:     mediaPath,
+			mediaFilePath: mediaPath,
 			mediaFilename: mediaFile,
 			convert:       ".ts" != extName,
 		},
@@ -78,7 +77,7 @@ func (dl *Downloader) Progress() float64 {
 	return dl.progress
 }
 
-func (dl *Downloader) Start(resolutionSelector func(playList []model.PlayItem, d *Downloader)) {
+func (dl *Downloader) Start(resolutionSelector func(playList []model.PlayItem, d *Downloader), overrideTip func(mediaFilename string, override chan bool), onStarted func()) {
 	m3u, err := parser.FromNetwork(dl.m3u8URL)
 	if nil != err {
 		log.Println(err)
@@ -96,8 +95,25 @@ func (dl *Downloader) Start(resolutionSelector func(playList []model.PlayItem, d
 		return
 	}
 
-	// 开始下载
-	dl.start(m3u.TsList)
+	// 检查媒体文件是否已存在
+	if exists, _ := util.FileExists(dl.merger.mediaFilePath); exists {
+		override := make(chan bool)
+		overrideTip(dl.merger.mediaFilename, override)
+		// 接收选择结果
+		go func(innerM3u *model.M3U8, ovr chan bool, started func()) {
+			for {
+				// 不覆盖，就不下载啦~
+				if <-ovr {
+					// 开始覆盖下载
+					dl.start(innerM3u.TsList, started)
+					break
+				}
+			}
+		}(m3u, override, onStarted)
+	} else {
+		// 开始下载
+		dl.start(m3u.TsList, onStarted)
+	}
 }
 
 func (dl *Downloader) append(resources ...*Resource) *Downloader {
@@ -105,7 +121,11 @@ func (dl *Downloader) append(resources ...*Resource) *Downloader {
 	return dl
 }
 
-func (dl *Downloader) start(tsList []model.TS) {
+func (dl *Downloader) start(tsList []model.TS, onStarted func()) {
+	if onStarted != nil {
+		onStarted()
+	}
+
 	if err := os.MkdirAll(dl.tsDir, os.ModePerm); nil != err {
 		panic(err)
 	}
@@ -149,15 +169,9 @@ func (dl *Downloader) start(tsList []model.TS) {
 				// 开始合并视频片段
 				dl.merger.apply(func() {
 					// 下载完成后，停止计时器
-					if nil != dl.speedTicker {
-						dl.speedTicker.Stop()
-						dl.speedTicker = nil
-					}
-
-					// 下载完成后，停止计时器
-					if nil != dl.progressTicker {
-						dl.progressTicker.Stop()
-						dl.progressTicker = nil
+					if nil != dl.calcTicker {
+						dl.calcTicker.Stop()
+						dl.calcTicker = nil
 					}
 				})
 			}
@@ -174,14 +188,12 @@ func (dl *Downloader) start(tsList []model.TS) {
 		return bytes.NewReader(data)
 	})
 
-	// 计算速度
+	// 计算速度和进度
 	go func() {
-		dl.speedTicker = component.StartTicker(1*time.Second, dl.calcSpeed)
-	}()
-
-	// 计算进度
-	go func() {
-		dl.progressTicker = component.StartTicker(1*time.Second, dl.calcProgress)
+		dl.calcTicker = component.StartTicker(1*time.Second, func() {
+			dl.calcSpeed()
+			dl.calcProgress()
+		})
 	}()
 }
 
