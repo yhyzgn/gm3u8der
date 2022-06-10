@@ -11,19 +11,23 @@ import (
 	"gm3u8der/util"
 )
 
+// Settings ...
 type Settings struct {
-	ID        int     `json:"id" gorm:"column:id;primaryKey;autoIncrement;type:int(11);"`
-	SaveDir   string  `json:"saveDir" gorm:"column:save_dir;type:varchar(255);"`
-	ExtType   ExtType `json:"extType" gorm:"column:ext_type;type:int(11);"`
-	TaskCount int     `json:"taskCount" gorm:"column:task_count;type:int(11);"`
-	Clipboard bool    `json:"clipboard" gorm:"column:clipboard;type:tinyint(1);"`
+	ID         int     `json:"id" gorm:"column:id;primaryKey;autoIncrement;type:int(11);"`
+	SaveDir    string  `json:"saveDir" gorm:"column:save_dir;type:varchar(255);"`
+	ExtType    ExtType `json:"extType" gorm:"column:ext_type;type:int(11);"`
+	TaskCount  int     `json:"taskCount" gorm:"column:task_count;type:int(11);"`
+	Clipboard  bool    `json:"clipboard" gorm:"column:clipboard;type:tinyint(1);"`
+	TraySticky bool    `json:"TraySticky" gorm:"column:tray_sticky;type:tinyint(1);"`
 }
 
+// NewSettings ...
 func NewSettings() *Settings {
 	_ = db.Instance.AutoMigrate(&Settings{})
 	return new(Settings)
 }
 
+// Load ...
 func (s *Settings) Load() *Settings {
 	var temp Settings
 	err := db.Instance.First(&temp).Error
@@ -37,10 +41,12 @@ func (s *Settings) Load() *Settings {
 	s.ExtType = temp.ExtType
 	s.TaskCount = temp.TaskCount
 	s.Clipboard = temp.Clipboard
+	s.TraySticky = temp.TraySticky
 
 	return s
 }
 
+// Store ...
 func (s *Settings) Store() {
 	s.store()
 }
@@ -51,6 +57,7 @@ func (s *Settings) storeDefault() {
 	s.ExtType = MP4
 	s.TaskCount = 5
 	s.Clipboard = true
+	s.TraySticky = true
 
 	s.store()
 }

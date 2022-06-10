@@ -10,6 +10,8 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-func Icon(win fyne.Window) {
+// Icon ...
+func Icon(app fyne.App, win fyne.Window) {
+	app.SetIcon(resourceLogoPng)
 	win.SetIcon(resourceLogoPng)
 }

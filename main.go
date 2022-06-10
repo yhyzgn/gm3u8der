@@ -21,14 +21,13 @@ func main() {
 	holder.Init()
 
 	der := app.NewWithID(cst.AppID)
-
 	// 设置主题
 	der.Settings().SetTheme(thm.NewFontTheme())
 
 	// 主窗体
 	main := der.NewWindow(cst.Title)
 	// 设置图标
-	ui.Icon(main)
+	ui.Icon(der, main)
 	// 设置主窗体
 	ui.Body(main)
 
@@ -36,6 +35,10 @@ func main() {
 	main.Resize(fyne.NewSize(1000, 600))
 	main.SetFixedSize(true)
 	main.SetPadded(false)
+
+	// 设置任务栏
+	ui.SetTray(der, main)
+
 	// 显示
 	main.ShowAndRun()
 }

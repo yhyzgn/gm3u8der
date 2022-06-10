@@ -41,6 +41,7 @@ func init() {
 	divLine.StrokeWidth = 1
 }
 
+// Body ...
 func Body(win fyne.Window) {
 	// 监视剪贴板
 	Clipboard(win, func(m3u8URL string, onShowed func()) {
@@ -64,7 +65,6 @@ func Body(win fyne.Window) {
 				})
 			}
 		}),
-		//widget.NewToolbarAction(resourceIcdeletePng, func() {}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(resourceIcsettingsPng, func() {
 			wdSaveDir := widget.NewEntry()
@@ -92,7 +92,17 @@ func Body(win fyne.Window) {
 			wdCheckClipboard.Checked = holder.Settings.Clipboard
 			ckClipboard := widget.NewFormItem("监听剪切板", wdCheckClipboard)
 
-			items := []*widget.FormItem{itemSelectDir, fiExt, taskCount, ckClipboard}
+			rgTraySticky := widget.NewRadioGroup([]string{"固定到任务栏", "直接退出应用"}, func(s string) {})
+			rgTraySticky.SetSelected(func() string {
+				if holder.Settings.TraySticky {
+					return "固定到任务栏"
+				}
+				return "直接退出应用"
+			}())
+			rgTraySticky.Horizontal = true
+			fiTraySticky := widget.NewFormItem("关闭窗口时", rgTraySticky)
+
+			items := []*widget.FormItem{itemSelectDir, fiExt, taskCount, ckClipboard, fiTraySticky}
 			var dlg dialog.Dialog
 			dlg = dialog.NewForm("设置", "保存", "取消", items, func(b bool) {
 				if b {
@@ -109,6 +119,7 @@ func Body(win fyne.Window) {
 					holder.Settings.ExtType = model.ParseExtType(rg.Selected)
 					holder.Settings.TaskCount = taskCount
 					holder.Settings.Clipboard = wdCheckClipboard.Checked
+					holder.Settings.TraySticky = rgTraySticky.Selected == "固定到任务栏"
 
 					// 保存
 					holder.Settings.Store()
