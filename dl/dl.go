@@ -140,11 +140,12 @@ func (dl *Downloader) start(tsList []model.TS, onStarted func()) {
 		name := fmt.Sprintf("slice_%06d.ts", i+1)
 		tsNames = append(tsNames, "file "+name)
 
-		// TODO 本次的 key 不带参数。。
-		item.Key.URI = strings.Split(item.Key.URI, "?")[0]
-
-		if nil != item.Key && item.Key.URI != "" && nil == keyMap[string(item.Key.Method)+"-"+item.Key.URI] {
-			keyMap[string(item.Key.Method)+"-"+item.Key.URI], _ = net.Get(item.Key.URI)
+		if nil != item.Key && item.Key.URI != "" {
+			// TODO 本次的 key 不带参数。。
+			item.Key.URI = strings.Split(item.Key.URI, "?")[0]
+			if nil == keyMap[string(item.Key.Method)+"-"+item.Key.URI] {
+				keyMap[string(item.Key.Method)+"-"+item.Key.URI], _ = net.Get(item.Key.URI)
+			}
 		}
 
 		dl.append(&Resource{
